@@ -1,5 +1,7 @@
-*.class
+# Mac DS_Store Files
+.DS_Store
 
+*.class
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
