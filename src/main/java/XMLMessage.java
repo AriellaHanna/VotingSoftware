@@ -3,26 +3,26 @@
  * @author adamhayes
  */
 public class XMLMessage {
-    private int phoneNum;
-    private int candidateID;
+    private String phoneNum;
+    private String candidateID;
     public XMLMessage(){
-        phoneNum = -1;
-        candidateID = -1;
+        phoneNum = null;
+        candidateID = null;
     }
-    public XMLMessage(int number, int id){
+    public XMLMessage(String number, String id){
         phoneNum = number;
         candidateID = id;
     }
-    public void setNum(int number){
+    public void setNum(String number){
         phoneNum = number;
     }
-    public void setID(int id){
+    public void setID(String id){
         candidateID = id;
     }
-    public int getNum(){
+    public String getNum(){
         return phoneNum;
     }
-    public int getID(){
+    public String getID(){
         return candidateID;
     }
 }
