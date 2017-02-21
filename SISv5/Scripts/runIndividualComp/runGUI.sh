@@ -1,4 +1,4 @@
-@echo off
+set+v
 title GUI
 
 javac -sourcepath ../../Components/GUI -cp ../../Components/* ../../Components/GUI/*.java
