@@ -1,4 +1,4 @@
-@echo off
+set +v
 title Uploader
 
 javac -sourcepath ../../Components/Uploader -cp ../../Components/* ../../Components/Uploader/*.java
