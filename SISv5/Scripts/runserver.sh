@@ -1,8 +1,10 @@
-set +v
+#!/bin/bash
+set -v off
 title SIS Server
 
-cd ../NewSISServer
+cd ..
+cd NewSISServer
 javac *.java
 java SISServer
 
-sleep
+sleep 100
