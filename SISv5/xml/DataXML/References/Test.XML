@@ -1,0 +1,24 @@
+<Msg>
+<Head>
+	<MessageType>21<MessageType>
+	<Description>Create VotingSoftware Component</Description>
+</Head>
+<Body>
+	<Item>
+		<Key>Name</Key>
+		<Value>Test</Value>
+	</Item>
+	<Item>
+		<Key>SourceCode</Key>
+		<Value>CreateVoting.java</Value>
+	</Item>
+	<Item>
+		<Key>InputMessageType 1</Key>
+		<Value>701</Value>
+	</Item>
+	<Item>
+		<Key>OutputMessageType 1</Key>
+		<Value>711</Value>
+	</Item>
+</Body>
+</Msg>
