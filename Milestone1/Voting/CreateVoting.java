@@ -174,7 +174,7 @@ public class CreateVoting
                 	message.putPair("AckMsgId","22");
                 	message.putPair("YesNo","Yes");
                 	message.putPair("Name","Voting");
-                    System.exit(0);
+                    System.exit(1);
                     break;
 
                 case "Deactivate":
@@ -184,6 +184,7 @@ public class CreateVoting
                 	message.putPair("YesNo","Yes");
                 	message.putPair("Name","Voting");
                     System.out.println("VotingSoftware Deactivated");
+                    System.exit(0);
                     break;
                 }
             }
