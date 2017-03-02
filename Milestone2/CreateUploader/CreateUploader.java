@@ -44,12 +44,7 @@ public class CreateUploader
     // socket for connection to SISServer
     static Socket universal;
     private static int port = 993;
-    
-    // message writer
-    static MsgEncoder encoder;
-    // message reader
-    static MsgDecoder decoder;
-
+   
     // scope of this component
     private static final String SCOPE = "SIS.Scope1";
 	// name of this component
@@ -66,7 +61,8 @@ public class CreateUploader
     static final String POP3_HOST_NAME = "pop.gmail.com";
     static final String POP3_PORT = "995";
     static final String emailSuccessTxt = "We have received your input.\nThanks for voting!";
-    static final String emailFailureTxt = "Unfortunately, we were unable to understand your email, and no votes were counted.";
+    static final String emailFailureTxt = "Unfortunately, we were unable to understand your email, and no votes were counted."
+            + "\nTo cast a vote, send an email with 'vote (candidate #)' in the subject line to this account.";
     static final String emailSubjectGood = "Vote Confirmation";
     static final String emailSubjectBad = "Error Processing Vote";// title
     static final String emailFromAddress = "hayeshanna1631@gmail.com";
@@ -80,7 +76,7 @@ public class CreateUploader
     public static void main(String[] args)
     {
         
-        
+        //init email session
          emailSession = Session.getDefaultInstance(props,
                           new javax.mail.Authenticator()
         {
@@ -105,40 +101,28 @@ public class CreateUploader
         {
             try
             {
-                
-               Store store = emailSession.getStore("pop3s");
-                System.out.println("created email session");
-                
+                System.out.println("Polling...");
+                Store store = emailSession.getStore("pop3s");
+                //open a new session with the gmail inbox 
+                //refreshing by opening and closing
                 store.connect(POP3_HOST_NAME, emailFromAddress, password);
-                System.out.println("connected to store");
-               Folder emailFolder = store.getFolder("INBOX");
-                System.out.println("Opened inbox");
+                //connect to the account
+                Folder emailFolder = store.getFolder("INBOX");
+                //open the inbox
                 emailFolder.open(Folder.READ_ONLY);
-                System.out.println("open email folder");
-                
-                Message[] msgs = emailFolder.getMessages();
-                
-                System.out.println("retrieved the message");
-               
-                ProcessMsg(msgs[0]);  
+                //read in the oldest unprocessed message
+                Message msg = emailFolder.getMessages()[0];
+                //process this message
+                ProcessMsg(msg);  
                 System.out.println("processed message");
+                //close the email session to refresh
                 emailFolder.close(false);
-                System.out.println("closed email folder");
                 store.close();
-                System.out.println("closed store");
 
             }
             catch (Exception e)
             {   
-                e.printStackTrace();
-                // if anything goes wrong, try to re-establish the connection
-                try{
-                    
-                } catch(Exception f){
-                    f.printStackTrace();
-                    
-                }
-                e.printStackTrace();
+                
                 try
                 {
                     // wait for 1 second to retry
@@ -147,20 +131,19 @@ public class CreateUploader
                 catch (InterruptedException e2)
                 {
                 }
-                System.out.println("Try to reconnect");
-                
+               
             } 
            
         }
     }
 
     /*
-     * Method for sending email for Alert Message
+     * Method for sending email for vote registration failure
      */
     static void sendFailureMessage(String recipient) throws MessagingException{
                 boolean debug = false;
-       
-
+       //generate an email session to construct a response email for users
+        System.out.println("Generating Failure message...");
         Session session = Session.getDefaultInstance(props,
                           new javax.mail.Authenticator()
         {
@@ -171,24 +154,30 @@ public class CreateUploader
             }
         });
         session.setDebug(debug);
-
+        //Create a new message
         Message msg = new MimeMessage(session);
+        //send it from the project email account
         InternetAddress addressFrom = new InternetAddress(emailFromAddress);
         msg.setFrom(addressFrom);
-
+        //send it back to the person who sent in the email we are currently processing
         InternetAddress[] addressTo = new InternetAddress[1];
         addressTo[0] = new InternetAddress(recipient);
-
         msg.setRecipients(Message.RecipientType.TO, addressTo);
+        //set the subject and text to the error response
         msg.setSubject(emailSubjectBad);
         msg.setText(emailFailureTxt);
+        //send the message
         Transport.send(msg);
         System.out.println("Informed user of error in vote tally.");
     }
+    /*
+     * Method for sending email for vote registration message creation success
+     */
     static void sendConfirmMessage(String recipient) throws MessagingException
     {
+        System.out.println("Generating Confirm message...");
         boolean debug = false;
-
+        //generate an email session to construct a response email for users
         Session session = Session.getDefaultInstance(props,
                           new javax.mail.Authenticator()
         {
@@ -199,17 +188,20 @@ public class CreateUploader
             }
         });
         session.setDebug(debug);
-
+        //create a new message 
         Message msg = new MimeMessage(session);
         InternetAddress addressFrom = new InternetAddress(emailFromAddress);
         msg.setFrom(addressFrom);
+        //send the message from the project account
 
         InternetAddress[] addressTo = new InternetAddress[1];
         addressTo[0] = new InternetAddress(recipient);
-
+        //send it back to the person who sent in the email we are currently processing
         msg.setRecipients(Message.RecipientType.TO, addressTo);
+        //set the subject and text to the error response
         msg.setSubject(emailSubjectGood);
         msg.setText(emailSuccessTxt);
+        //send the email
         Transport.send(msg);
         System.out.println("Informed voter of vote reception.");
     }
@@ -218,81 +210,91 @@ public class CreateUploader
 
     private static void ProcessMsg(Message msg) throws Exception
     {
+        //process the message,
+        //meaning check the subject to see if it contains 
+        //the correct format to be counted as a vote
+        System.out.println("Processing message...");
         Address[] sender = msg.getFrom();
         String subject = msg.getSubject();
         String vote[] = subject.toLowerCase().split(" ");
+        //subject must contain
         if(!vote[0].equals("vote") || vote.length != 2){
+            System.out.println("Error in message construction");
             sendFailureMessage(sender[0].toString());
         } else {
             try{
             createXML(vote[1], sender[0]);
+            System.out.println("XML message created successfully");
             sendConfirmMessage(sender[0].toString());
             } catch (Exception e){
+                System.out.println("Error in message construction");
                 sendFailureMessage(sender[0].toString());
             }
         }
+        //remove the email from the program's view so that 
+        //it will only work on the oldest unprocessed email in the inbox
         delete();
-        
     }
     private static void createXML(String candID, Address sender) throws Exception{
         try{
-        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 
-		// root elements
-	Document doc = docBuilder.newDocument();
-        Element root = doc.createElement("Msg");
-        doc.appendChild(root);
+            //Generate an xml file with the format of message 701
+            //aka the cast a vote format
+            Document doc = docBuilder.newDocument();
+            Element root = doc.createElement("Msg");
+            doc.appendChild(root);
         
-        Element head = doc.createElement("Head");
-        root.appendChild(head);
+            Element head = doc.createElement("Head");
+            root.appendChild(head);
         
-        Element body = doc.createElement("Body");
-        Element item1 = doc.createElement("Item");
-        Element item2 = doc.createElement("Item");
+            Element body = doc.createElement("Body");
+            Element item1 = doc.createElement("Item");
+            Element item2 = doc.createElement("Item");
        
-        Element MsgId = doc.createElement("MsgID");
-        MsgId.appendChild(doc.createTextNode("701"));
-        head.appendChild(MsgId);
+            Element MsgId = doc.createElement("MsgID");
+            MsgId.appendChild(doc.createTextNode("701"));
+            head.appendChild(MsgId);
         
-        Element desc = doc.createElement("Description");
-        desc.appendChild(doc.createTextNode("Cast Vote"));
-        head.appendChild(desc);
+            Element desc = doc.createElement("Description");
+            desc.appendChild(doc.createTextNode("Cast Vote"));
+            head.appendChild(desc);
         
-        Element VoterNo = doc.createElement("VoterPhoneNo");
-        VoterNo.appendChild(doc.createTextNode(sender.toString()));
-        item1.appendChild(VoterNo);
-        body.appendChild(item1);
+            Element VoterNo = doc.createElement("VoterPhoneNo");
+            VoterNo.appendChild(doc.createTextNode(sender.toString()));
+            item1.appendChild(VoterNo);
+            body.appendChild(item1);
         
-        Element CandidateID = doc.createElement("CandidateID");
-        CandidateID.appendChild(doc.createTextNode(candID));
-        item2.appendChild(CandidateID);
-        body.appendChild(item2);
-        root.appendChild(body);
+            Element CandidateID = doc.createElement("CandidateID");
+            CandidateID.appendChild(doc.createTextNode(candID));
+            item2.appendChild(CandidateID);
+            body.appendChild(item2);
+            root.appendChild(body);
         
-        TransformerFactory transFact = TransformerFactory.newInstance();
-        Transformer trans = transFact.newTransformer();
-        DOMSource source = new DOMSource(doc);
-        String email = sender.toString().split("@")[0];
-        StreamResult result = new StreamResult(email + ".xml");
-        trans.transform(source, result);
+            TransformerFactory transFact = TransformerFactory.newInstance();
+            Transformer trans = transFact.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            String email = sender.toString().split("@")[0];
+            StreamResult result = new StreamResult(email + ".xml");
+            trans.transform(source, result);
         }  catch (ParserConfigurationException pce) {
 		pce.printStackTrace();
-	  } catch (TransformerException tfe) {
+	} catch (TransformerException tfe) {
 		tfe.printStackTrace();
-	  }
+	}
         
     }
-
-         public static void delete() 
-   {
+    //remove the most recently processed email in the inbox from the programs view
+    //so that repeat emails will not be considered
+    public static void delete(){
       try 
       {
          // get the session object
          
 
          
-         // emailSession.setDebug(true);
+         
 
          // create the POP3 store object and connect with the pop server
          Store store = emailSession.getStore("pop3s");
@@ -304,14 +306,14 @@ public class CreateUploader
          emailFolder.open(Folder.READ_WRITE);
 
         
-         // retrieve the messages from the folder in an array and print it
+         // retrieve the messages from the folder in an array 
          Message[] messages = emailFolder.getMessages();
          
-         
+            //operate only on the oldest message (aka the one we are currently processing
             Message message = messages[0];
             
             
-	       // set the DELETE flag to true
+	     // set the DELETE flag to true
 	    message.setFlag(Flags.Flag.SEEN, true);
             message.setFlag(Flags.Flag.DELETED, true);
             
