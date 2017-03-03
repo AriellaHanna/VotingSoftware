@@ -1,0 +1,39 @@
+<Msg>
+	<Item>
+		<Key>MessageType</Key>
+		<Value>Reading</Value>
+	</Item>
+	
+	<Item>
+		<Key>MsgId</Key>
+		<Value>702</Value>
+	</Item>
+	
+	<Item>
+		<Key>Description</Key>
+		<Value>Request Report</Value>
+	</Item>
+	
+	<Item>
+		<Key>Scope</Key>
+		<Value>SIS.Scope1</Value>
+	</Item>
+	
+	<Item>
+		<Key>Sender</Key>
+		<Value>SIS</Value>
+	</Item>
+	
+	<Item>
+		<Key>Receiver</Key>
+		<Value>VotingSoftware</Value>
+	</Item>
+	<Item>
+		<Key>Passcode</Key>
+		<Value>admin</Value>
+	</Item>
+	<Item>
+		<Key>N</Key>
+		<Value>4</Value>
+	</Item>
+</Msg>
