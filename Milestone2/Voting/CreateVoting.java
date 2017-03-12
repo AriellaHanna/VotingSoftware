@@ -40,6 +40,7 @@ public class CreateVoting
     private static boolean closed = true;
     // Voter table
     private static VoterTable vt  = new VoterTable();
+
     // Tally Table
     private static TallyTable tt;
     private static boolean ttInit = false;
@@ -49,6 +50,7 @@ public class CreateVoting
      */
     public static void main(String[] args)
     {
+		
         while (true)
         {
             try
@@ -65,12 +67,14 @@ public class CreateVoting
                 /*
                  * construct a Connect message to establish the connection
                  */
+					while(!registerComponent());
                 KeyValueList conn = new KeyValueList();
                 conn.putPair("Scope", SCOPE);
                 conn.putPair("MessageType", "Connect");
 				conn.putPair("Role", "Basic");
                 conn.putPair("Name", NAME);
                 encoder.sendMsg(conn);
+				
 
                 // KeyValueList for inward messages, see KeyValueList for
                 // details
@@ -78,6 +82,7 @@ public class CreateVoting
 
                 while (true)
                 {
+					System.out.println("Polling...");
                     // attempt to read and decode a message, see MsgDecoder for
                     // details
                     kvList = decoder.getMsg();
@@ -110,6 +115,32 @@ public class CreateVoting
             }
         }
     }
+    static boolean registerComponent(){
+		System.out.println("attempting to register");
+		try{
+        	KeyValueList reg = new KeyValueList();
+        	reg.putPair("MessageType","Register");
+        	reg.putPair("MsgId","21");
+        	reg.putPair("Scope",SCOPE);
+        	reg.putPair("Role","Basic");
+        	reg.putPair("Description","Create VotingSoftware Component");
+        	reg.putPair("Passcode",password);
+        	reg.putPair("SecurityLevel","3");
+        	reg.putPair("SourceCode","VS.jar");
+        	reg.putPair("Component Description","VotingSoftware checks voters using VoterTable and counts votes into TallyTable");
+			reg.putPair("KnowledgeBase","TallyTable,VoterTable");
+			reg.putPair("InputMsgID 1", "701");
+			reg.putPair("InputMsgID 2", "702");
+			reg.putPair("InputMsgID 3", "703");
+			reg.putPair("OutputMsgID 1", "711");
+			reg.putPair("OutputMsgID 2", "712");
+			reg.putPair("OutputMsgID 1", "26");
+			encoder.sendMsg(reg);
+			return true;
+		} catch(Exception e){
+			return false;
+	}
+    }   
 
     /*
      * used for connect(reconnect) to SISServer
@@ -119,9 +150,17 @@ public class CreateVoting
         Socket socket = new Socket("127.0.0.1", port);
         return socket;
     }
+    private static void genMessage(KeyValueList message){
+
+                message.putPair("Sender",NAME);
+                message.putPair("Scope",SCOPE);
+                message.putPair("Receiver","CreateUploader");
+                
+    }
     private static void ProcessMsg(KeyValueList kvList) throws Exception
     {
 		KeyValueList message = new KeyValueList();
+		
         String scope = kvList.getValue("Scope");
         if (!SCOPE.startsWith(scope))
         {
@@ -147,11 +186,13 @@ public class CreateVoting
         switch (messageType)
         {
         case "Confirm":
+		
             System.out.println("Connect to SISServer successful.");
             break;
         case "Alert":
         	break;
         case "Setting":
+			genMessage(message);
         	switch(msgId){
         		case ("703"):
         			pcode = kvList.getValue("Passcode");
@@ -159,7 +200,7 @@ public class CreateVoting
         			message.putPair("MsgId","26");
         			message.putPair("Scope","SIS.Scope1");
         			message.putPair("Sender","VotingSoftware");
-        			message.putPair("Receiver","SIS");
+        			message.putPair("Receiver","CreateUploader");
     				message.putPair("Description","Acknowledgement (Component acknowledges request to initialize tally table)");
     				message.putPair("AckMsgId","703");
     				String candidateList = kvList.getValue("CandidateList");
@@ -189,7 +230,7 @@ public class CreateVoting
         			message.putPair("MessageType","Confirm");
         			message.putPair("Scope","SIS.Scope1");
         			message.putPair("Sender","VotingSoftware");
-        			message.putPair("Receiver","SIS");
+        			message.putPair("Receiver","CreateUploader");
     				message.putPair("Description","Acknowledgement (Component acknowledges activation request)");
     				message.putPair("AckMsgId","23");
         			if (pcode.equals(password)){
@@ -209,7 +250,7 @@ public class CreateVoting
         			message.putPair("MessageType","Confirm");
         			message.putPair("Scope","SIS.Scope1");
         			message.putPair("Sender","VotingSoftware");
-        			message.putPair("Receiver","SIS");
+        			message.putPair("Receiver","CreateUploader");
     				message.putPair("Description","Acknowledgement (Component acknowledges deactivation request)");
     				message.putPair("AckMsgId","25");
         			if (pcode.equals(password)){
@@ -229,6 +270,7 @@ public class CreateVoting
         	break;
         //Kill component
         case "Emergency":
+			genMessage(message);
         	if (msgId.equals("22")){
         		pcode = kvList.getValue("Passcode");
         		message.putPair("MessageType","Alert");
@@ -251,6 +293,7 @@ public class CreateVoting
         	}
         	break;
         case "Reading":
+			genMessage(message);
         	switch(msgId){
         		//Cast vote
         		case "701":
@@ -264,20 +307,24 @@ public class CreateVoting
         				if (vt.addVoter(phone,candidate)){
         					if (tt.addVote(candidate)){
         						message.putPair("Status","3");
+								message.putPair("error","none");
         						System.out.println("Vote successfully added");
         					}
         					else{
         						message.putPair("Status","2");
+								message.putPair("error","Invalid Candidate ID");
         						System.out.println("Invalid candidate ID");
         					}
         				}
         				else{
         					message.putPair("Status","1");
+							message.putPair("error","Duplicate Vote");
         					System.out.println("Duplicate vote");
         				}
         			}
         			else{
         				message.putPair("Status","2");
+						message.putPair("error","Voting Closed");
     					System.out.println("Voting is closed");
         			}
         			break;
@@ -305,12 +352,15 @@ public class CreateVoting
         //Request report
        
         default:
+			genMessage(message);
             message.putPair("MessageType","ERROR");
             message.putPair("Description","Unable to process message");
             System.out.println("There was an error with your message");
             break;
         }
         encoder.sendMsg(message);
+
+
     }
     
     //Testing method
