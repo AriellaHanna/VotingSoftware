@@ -43,18 +43,22 @@ public class CreateUploader
 {
     // socket for connection to SISServer
     static Socket universal;
+    public static boolean canSend = true;
     private static int port = 993;
-   
+    private static int conPort = 53217;
     // scope of this component
     private static final String SCOPE = "SIS.Scope1";
 	// name of this component
-    private static final String NAME = "Uploader";
+    private static final String NAME = "CreateUploader";
     // messages types that can be handled by this component
     private static final List<String> TYPES = new ArrayList<String>(
         Arrays.asList(new String[] { "Alert", "Emergency", "Confirm", "Setting" }));
 
   //  private static UploaderReading reading = new UploaderReading();
-
+    // message writer
+    static MsgEncoder encoder;
+    // message reader
+    static MsgDecoder decoder;
     // variables for sending emails
     static final String SMTP_HOST_NAME = "smtp.gmail.com";
     static final String SMTP_PORT = "465";
@@ -62,14 +66,17 @@ public class CreateUploader
     static final String POP3_PORT = "995";
     static final String emailSuccessTxt = "We have received your input.\nThanks for voting!";
     static final String emailFailureTxt = "Unfortunately, we were unable to understand your email, and no votes were counted."
-            + "\nTo cast a vote, send an email with 'vote (candidate #)' in the subject line to this account.";
+            + "\nTo cast a vote, send an email with 'vote (candidate #)' in the subject line to this account.\n";
+
     static final String emailSubjectGood = "Vote Confirmation";
-    static final String emailSubjectBad = "Error Processing Vote";// title
+    static final String emailSubjectBad = "Error Processing Vote";
     static final String emailFromAddress = "hayeshanna1631@gmail.com";
     static final String password = "chang1631";
     static final String SSL_FACTORY = "javax.net.ssl.SSLSocketFactory";
     static Properties props = new Properties();
-    static Session emailSession;    
+    static Session emailSession;  
+    static final String cands = "1,2,3,4,5";
+    static final String adminPass = "admin";
     /*
      * Main program
      */
@@ -97,10 +104,27 @@ public class CreateUploader
         props.put("mail.pop3s.host", POP3_HOST_NAME);
         props.put("mail.pop3s.port", "995");
         props.put("mail.pop3.starttls.enable", "true");
+       
         while (true)
         {
+            try{
+                // bind the message reader to inputstream of the socket
+            decoder = new MsgDecoder(universal.getInputStream());
+                // bind the message writer to outputstream of the socket
+            encoder = new MsgEncoder(universal.getOutputStream());
+            while(!registerComponent());
+            KeyValueList conn = new KeyValueList();
+            conn.putPair("Scope", SCOPE);
+            conn.putPair("MessageType", "Connect");
+	    conn.putPair("Role", "Basic");
+            conn.putPair("Name", NAME);
+            encoder.sendMsg(conn);
+            
+            while(true){
             try
             {
+                                // try to establish a connection to SISServer
+
                 System.out.println("Polling...");
                 Store store = emailSession.getStore("pop3s");
                 //open a new session with the gmail inbox 
@@ -118,6 +142,7 @@ public class CreateUploader
                 //close the email session to refresh
                 emailFolder.close(false);
                 store.close();
+                
 
             }
             catch (Exception e)
@@ -133,17 +158,59 @@ public class CreateUploader
                 }
                
             } 
+            }
            
+        } catch(Exception e){
+                e.printStackTrace();
+                try
+                {
+                    // wait for 1 second to retry
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException e2)
+                {
+                }
+                System.out.println("Try to reconnect");
+                try
+                {
+                    universal = connect();
+                }
+                catch (IOException e1)
+                {
+                }
+                
         }
+        }
+    }
+    static boolean registerComponent() {
+        try{
+            KeyValueList reg = new KeyValueList();
+            reg.putPair("MessageType","Register");
+            reg.putPair("MsgId","21");
+            reg.putPair("Scope",SCOPE);
+            reg.putPair("Role","Basic");
+            reg.putPair("Description","Create Uploader Component");
+            reg.putPair("Passcode",adminPass);
+            reg.putPair("SecurityLevel","3");
+            reg.putPair("SourceCode","VS.jar");
+            reg.putPair("Component Description","CreateUploader polls for votes in the gmail inbox"
+                + " and then parses the email and sends a message to createVoting.");
+            encoder.sendMsg(reg);
+            return true;
+        } catch (Exception e){
+            return false;
+        }   
     }
 
     /*
      * Method for sending email for vote registration failure
      */
-    static void sendFailureMessage(String recipient) throws MessagingException{
+    static void sendFailureMessage(String recipient, String why) throws MessagingException{
                 boolean debug = false;
        //generate an email session to construct a response email for users
         System.out.println("Generating Failure message...");
+        String errorExplain = "The reason for the error in vote tallying was as follows:\n"
+                + why + "\nPlease note that only one vote can be counted per email account.";
         Session session = Session.getDefaultInstance(props,
                           new javax.mail.Authenticator()
         {
@@ -164,8 +231,10 @@ public class CreateUploader
         addressTo[0] = new InternetAddress(recipient);
         msg.setRecipients(Message.RecipientType.TO, addressTo);
         //set the subject and text to the error response
+       
         msg.setSubject(emailSubjectBad);
-        msg.setText(emailFailureTxt);
+ 
+        msg.setText(emailFailureTxt + errorExplain);
         //send the message
         Transport.send(msg);
         System.out.println("Informed user of error in vote tally.");
@@ -173,6 +242,14 @@ public class CreateUploader
     /*
      * Method for sending email for vote registration message creation success
      */
+        /*
+     * used for connect(reconnect) to SISServer
+     */
+    static Socket connect() throws IOException
+    {
+        Socket socket = new Socket("127.0.0.1", conPort);
+        return socket;
+    }
     static void sendConfirmMessage(String recipient) throws MessagingException
     {
         System.out.println("Generating Confirm message...");
@@ -207,7 +284,69 @@ public class CreateUploader
     }
 
     // ============= end of sending email ====================
+    private static void killVoting()throws Exception{
+        KeyValueList message = new KeyValueList();
+        genMessage(message);
+                message.putPair("MessageType","Emergency");
+        message.putPair("MsgId","22");
+        message.putPair("Passcode",adminPass);
+        encoder.sendMsg(message);
+    }
+    private static void endVoting(String numWinners)throws Exception{
+                KeyValueList message = new KeyValueList();
+        message.putPair("MessageType","Setting");
+        genMessage(message);
+        message.putPair("MsgId","702");
+        message.putPair("Passcode",adminPass);
+        message.putPair("N",numWinners);
+        encoder.sendMsg(message);
+        message.removePair("MsgId");
+        message.putPair("MsgId","25");
+        encoder.sendMsg(message);
+    }
+    private static void initVoting()throws Exception{
+        KeyValueList message = new KeyValueList();
+        genMessage(message);
+        message.putPair("MessageType","Setting");
+        message.putPair("MsgId","24");
+        message.putPair("Passcode",adminPass);
+        message.putPair("CandidateList",cands);
+        encoder.sendMsg(message);
+        KeyValueList msg = decoder.getMsg();
+        
+        message.removePair("MsgId");
+        message.putPair("MsgId","703");
+        encoder.sendMsg(message);
+        
+    }
+    private static void genMessage(KeyValueList message){
 
+                message.putPair("Sender",NAME);
+                message.putPair("Scope",SCOPE);
+                message.putPair("Receiver","VotingSoftware");
+                
+    }
+    private static KeyValueList castVote(String candID, Address sender) throws Exception{
+        String source = sender.toString();
+        KeyValueList message = new KeyValueList();
+        KeyValueList response;
+        genMessage(message);
+
+        
+        message.putPair("MessageType","Reading");
+        message.putPair("MsgId","701");
+        message.putPair("Description","Cast Vote");
+        message.putPair("VoterPhoneNo",source);
+        message.putPair("CandidateID",candID);
+        encoder.sendMsg(message);
+        System.out.println("Wait for response...");
+        response = decoder.getMsg();
+        System.out.println(response.toString());
+        if(response.getValue("MessageType").equals("ERROR")){
+            throw new Exception();
+        }
+        return response;
+    }
     private static void ProcessMsg(Message msg) throws Exception
     {
         //process the message,
@@ -217,76 +356,48 @@ public class CreateUploader
         Address[] sender = msg.getFrom();
         String subject = msg.getSubject();
         String vote[] = subject.toLowerCase().split(" ");
-        //subject must contain
-        if(!vote[0].equals("vote") || vote.length != 2){
+        System.out.println("got subject line");
+        //subject must contain vote
+        if(!vote[0].equals("vote") || vote.length > 3){
             System.out.println("Error in message construction");
-            sendFailureMessage(sender[0].toString());
+            sendFailureMessage(sender[0].toString(), "Bad subject line format");
         } else {
+            if(vote[1].equals("init")){
+                initVoting();
+            } else if (vote[1].equals("end")){
+                endVoting(vote[2]);
+            } else if (vote[1].equals("kill")){
+                killVoting();
+                System.out.println("ending email parsing...");
+                System.exit(1);
+            } else {
             try{
-            createXML(vote[1], sender[0]);
-            System.out.println("XML message created successfully");
-            sendConfirmMessage(sender[0].toString());
+                KeyValueList response = castVote(vote[1], sender[0]);
+                if(!response.getValue("error").equals("none")){
+                //duplicate email detected, reject vote
+                    System.out.println("Error detected");
+                    sendFailureMessage(sender[0].toString(), response.getValue("error"));
+                } else {
+                    System.out.println("XML message created successfully");
+                    sendConfirmMessage(sender[0].toString());
+                }
             } catch (Exception e){
                 System.out.println("Error in message construction");
-                sendFailureMessage(sender[0].toString());
+                sendFailureMessage(sender[0].toString(), e.toString());
             }
+        }
         }
         //remove the email from the program's view so that 
         //it will only work on the oldest unprocessed email in the inbox
         delete();
     }
-    private static void createXML(String candID, Address sender) throws Exception{
-        try{
-            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 
-            //Generate an xml file with the format of message 701
-            //aka the cast a vote format
-            Document doc = docBuilder.newDocument();
-            Element root = doc.createElement("Msg");
-            doc.appendChild(root);
-        
-            Element head = doc.createElement("Head");
-            root.appendChild(head);
-        
-            Element body = doc.createElement("Body");
-            Element item1 = doc.createElement("Item");
-            Element item2 = doc.createElement("Item");
-       
-            Element MsgId = doc.createElement("MsgID");
-            MsgId.appendChild(doc.createTextNode("701"));
-            head.appendChild(MsgId);
-        
-            Element desc = doc.createElement("Description");
-            desc.appendChild(doc.createTextNode("Cast Vote"));
-            head.appendChild(desc);
-        
-            Element VoterNo = doc.createElement("VoterPhoneNo");
-            VoterNo.appendChild(doc.createTextNode(sender.toString()));
-            item1.appendChild(VoterNo);
-            body.appendChild(item1);
-        
-            Element CandidateID = doc.createElement("CandidateID");
-            CandidateID.appendChild(doc.createTextNode(candID));
-            item2.appendChild(CandidateID);
-            body.appendChild(item2);
-            root.appendChild(body);
-        
-            TransformerFactory transFact = TransformerFactory.newInstance();
-            Transformer trans = transFact.newTransformer();
-            DOMSource source = new DOMSource(doc);
-            String email = sender.toString().split("@")[0];
-            StreamResult result = new StreamResult(email + ".xml");
-            trans.transform(source, result);
-        }  catch (ParserConfigurationException pce) {
-		pce.printStackTrace();
-	} catch (TransformerException tfe) {
-		tfe.printStackTrace();
-	}
-        
-    }
     //remove the most recently processed email in the inbox from the programs view
     //so that repeat emails will not be considered
+    
+    //SISServer waits for a response from teh SIS server,
+    //if there is no response for designated amount of time, dont count vote
+
     public static void delete(){
       try 
       {
@@ -330,5 +441,6 @@ public class CreateUploader
          e.printStackTrace();
       } 
    }
+   
 
 }
