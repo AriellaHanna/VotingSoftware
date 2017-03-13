@@ -39,7 +39,7 @@ public class CreateVoting
     // true when voting is closed, false when voting is open
     private static boolean closed = true;
     // Voter table
-    private static VoterTable vt  = new VoterTable();
+    private static VoterTable vt;
 
     // Tally Table
     private static TallyTable tt;
@@ -212,6 +212,7 @@ public class CreateVoting
     						tt.addId(candidates[i]);
     					}
     					ttInit = true;
+    					vt = new VoterTable(tt);
     					System.out.println("Tally Table created");
         			}
         			else{

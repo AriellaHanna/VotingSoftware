@@ -1,17 +1,45 @@
 import java.util.*;
 public class TallyTable{
 	private ArrayList<Entry> entries;
+	private int numCandidates;
 	
 	//Empty constructor
 	public TallyTable(){
 		entries = new ArrayList<Entry>();
+		numCandidates = 0;
 	}
 	
 	//Constructor with number of candidates
 	public TallyTable(int n){
 		entries = new ArrayList<Entry>(n);
+		numCandidates = n;
 	}
 	
+	//Copy constructor
+	public TallyTable(TallyTable tt){
+		entries = tt.getEntries();
+		numCandidates = tt.getNumCandidates();
+	}
+	
+	/**
+		Gets a list of candidate ids
+		@return Array of candidate ids
+	*/
+	public String[] getCandidates(){
+		String[] list = new String[numCandidates];
+		for (int i = 0; i < list.length; i++){
+			list[i] = entries.get(i).getId();
+		}
+		return list;
+	}
+	
+	public ArrayList<Entry> getEntries(){
+		return entries;
+	}
+	
+	public int getNumCandidates(){
+		return numCandidates;
+	}
 	/**
 		Adds candidate Id to table
 		If id is not already in table, add it and return true
