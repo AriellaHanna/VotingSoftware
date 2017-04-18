@@ -2,23 +2,27 @@
 <Msg>
 		<Item>
 			<Key>MessageType</Key>
-			<Value>Register</Value>
+			<Value>Setting</Value>
 		</Item>
 		<Item>
 			<Key>MsgId</Key>
-			<Value>21</Value>
+			<Value>24</Value>
 		</Item>
 		<Item>
 			<Key>Scope</Key>
 			<Value>SIS.Scope1</Value>
 		</Item>
 		<Item>
-			<Key>Role</Key>
-			<Value>Basic</Value>
+			<Key>Sender</Key>
+			<Value>SIS</Value>
+		</Item>
+		<Item>
+			<Key>Receiver</Key>
+			<Value>VotingSoftware</Value>
 		</Item>
 		<Item>
 			<Key>Description</Key>
-			<Value>Create GUI Component</Value>
+			<Value>Create VotingSoftware Component</Value>
 		</Item>
 		<Item>
 			<Key>Passcode</Key>
@@ -30,16 +34,6 @@
 		</Item>
 		<Item>
 			<Key>Name</Key>
-			<Value>GUI</Value>
-		</Item>
-		<Item>
-			<Key>Component Description</Key>
-			<Value>
-				allows cleaner interactions for admin of voting software program
-			</Value>
-		</Item>
-		<Item>
-			<Key>KnowledgeBase</Key>
-			<Value>TallyTable,VoterTable,VotingSoftware</Value>
+			<Value>VotingSoftware</Value>
 		</Item>
 </Msg>

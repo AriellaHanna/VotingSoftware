@@ -8,63 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Enumeration;
-import java.net.SocketException;
-
-class NetTool {
-	/**
-	 * If an address can be used for public access
-	 * 
-	 * @param inetAddress
-	 *            an address
-	 * @return public or not
-	 */
-	private static boolean isPublic(InetAddress inetAddress) {
-		if (!inetAddress.isAnyLocalAddress()
-				&& !inetAddress.isLinkLocalAddress()
-				&& !inetAddress.isLoopbackAddress()
-				&& !inetAddress.isMCGlobal() && !inetAddress.isMCLinkLocal()
-				&& !inetAddress.isMCNodeLocal() && !inetAddress.isMCOrgLocal()
-				&& !inetAddress.isMCSiteLocal()
-				&& !inetAddress.isMulticastAddress()) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Get the public address of this machine
-	 * 
-	 * @return public address
-	 */
-	public static String getPublicAddress() {
-		Enumeration<NetworkInterface> e;
-		try {
-			e = NetworkInterface.getNetworkInterfaces();
-			while (e.hasMoreElements()) {
-				Enumeration<InetAddress> addrs = e.nextElement()
-						.getInetAddresses();
-				while (addrs.hasMoreElements()) {
-					InetAddress inetAddress = (InetAddress) addrs.nextElement();
-					if (isPublic(inetAddress)
-							&& inetAddress instanceof Inet4Address) {
-						return inetAddress.getHostAddress();
-					}
-				}
-			}
-		} catch (SocketException e1) {
-			// TODO Auto-generated catch block
-			// System.out.println(e1.getMessage());
-		}
-
-		return null;
-	}
-}
-
 class KeyValueList {
 	// interal map for the message <property name, property value>, key and
 	// value are both in String format
@@ -96,8 +39,8 @@ class KeyValueList {
 		map.put(key, value);
 		return true;
 	}
-
-	public String removePair(String key) {
+	
+	public String removePair(String key){
 		return map.remove(key);
 	}
 
@@ -133,9 +76,6 @@ class KeyValueList {
 	// return list;
 	// }
 
-	/*
-	 * encode the KeyValueList into a String
-	 */
 	/*
 	 * encode the KeyValueList into a String
 	 */
@@ -176,12 +116,7 @@ class KeyValueList {
 	 * get the property value based on property name
 	 */
 	public String getValue(String key) {
-		String value = map.get(key);
-		if (value != null) {
-			return value;
-		}else{
-			return "";
-		}
+		return map.get(key);
 	}
 
 	/*
@@ -228,7 +163,7 @@ class MsgEncoder {
 			return;
 		}
 
-		writer.println(kvList.encodedString());
+		writer.print(kvList.encodedString() + "\n");
 		writer.flush();
 	}
 }
