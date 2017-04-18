@@ -39,6 +39,10 @@ class KeyValueList {
 		map.put(key, value);
 		return true;
 	}
+	
+	public String removePair(String key){
+		return map.remove(key);
+	}
 
 	// /*
 	// * extract a List containing all the input message IDs in Integer format

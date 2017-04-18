@@ -125,6 +125,7 @@ public class Window {
         frame.setVisible(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         newPassword();
+        sendConnect();
         
         
     }
@@ -251,6 +252,7 @@ public class Window {
                 conn.putPair("Name", NAME);
                 encoder.sendMsg(conn);
                 connected = true;
+                decoder.getMsg();
                 
                 // KeyValueList for inward messages, see KeyValueList for
                 // details
@@ -311,7 +313,7 @@ public class Window {
 
         switch (messageType)
         {
-        case "Confirm":
+        case "Setting":
 			switch(ackMsgId){
 				//Tried to create tally table
 				case "703":
@@ -358,7 +360,7 @@ public class Window {
 				JOptionPane.showInputDialog("Password incorrect");
 			}
 			break;
-        case "Setting":
+        case "Confirm":
 			break;
         case "Connect":
         	break;
@@ -432,6 +434,8 @@ public class Window {
                 JOptionPane.showMessageDialog(frame,"Error "
                         + "communicating with Voting Software","Communication Error",
                         JOptionPane.ERROR_MESSAGE);
+                d.printStackTrace();
+                
             }
                
             
@@ -461,7 +465,7 @@ public class Window {
         //stop accepting new votes
         public void actionPerformed(ActionEvent e){
             try{
-            sendConnect();
+            //sendConnect();
             KeyValueList deactMes = new KeyValueList();
             genMessage(deactMes);
             deactMes.putPair("MessageType","Setting");

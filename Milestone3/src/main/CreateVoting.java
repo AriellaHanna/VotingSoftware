@@ -196,7 +196,7 @@ public class CreateVoting
         	switch(msgId){
         		case ("703"):
         			pcode = kvList.getValue("Passcode");
-        			message.putPair("MessageType","Confirm");
+        			message.putPair("MessageType","Setting");
         			message.putPair("MsgId","26");
         			//message.putPair("Scope","SIS.Scope1");
         			//message.putPair("Sender","VotingSoftware");
@@ -230,7 +230,7 @@ public class CreateVoting
         			break;
         		case("24"):
         			pcode = kvList.getValue("Passcode");
-        			message.putPair("MessageType","Confirm");
+        			message.putPair("MessageType","Setting");
         			message.putPair("MsgId", "26");
         			//message.putPair("Scope","SIS.Scope1");
         			//message.putPair("Sender","VotingSoftware");
@@ -251,7 +251,7 @@ public class CreateVoting
         		//Deactivate component
         		case "25":
         			pcode = kvList.getValue("Passcode");
-        			message.putPair("MessageType","Confirm");
+        			message.putPair("MessageType","Setting");
         			message.putPair("msgId", "26");
         			//message.putPair("Scope","SIS.Scope1");
         			//message.putPair("Sender","VotingSoftware");
