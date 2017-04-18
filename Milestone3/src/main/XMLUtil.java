@@ -1,4 +1,5 @@
-import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.JAXBContext;
@@ -6,28 +7,47 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 public class XMLUtil {
 
-	public static KeyValueList extractToKV(File file) {
-		KeyValueList kvList = new KeyValueList();
+	public static List<KeyValueList> extractToKV(String url) throws Exception {
+		List<KeyValueList> kvLists = new ArrayList<KeyValueList>();
 		try {
-			JAXBContext context = JAXBContext.newInstance(Msg.class);
+			JAXBContext context = JAXBContext.newInstance(Message.class);
 			Unmarshaller unmarshaller = context.createUnmarshaller();
-
-			Msg msg = (Msg) unmarshaller.unmarshal(file);
-
-			kvList = generateKV(msg);
+			Message message = (Message) unmarshaller.unmarshal(new URL(url));
+			List<Msg> msgs = message.getMsgs();
+			if (msgs != null) {
+				for (Msg msg : msgs) {
+					kvLists.add(generateKV(msg));
+				}
+			}
 
 		} catch (JAXBException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return kvList;
+		return kvLists;
 	}
+
+	// public static KeyValueList extractToKV(File file) {
+	// KeyValueList kvList = new KeyValueList();
+	// try {
+	// JAXBContext context = JAXBContext.newInstance(Msg.class);
+	// Unmarshaller unmarshaller = context.createUnmarshaller();
+	//
+	// Msg msg = (Msg) unmarshaller.unmarshal(file);
+	//
+	// kvList = generateKV(msg);
+	//
+	// } catch (JAXBException e) {
+	// // TODO Auto-generated catch block
+	// e.printStackTrace();
+	// }
+	// return kvList;
+	// }
 
 	public static KeyValueList generateKV(Msg msg) {
 		KeyValueList kvList = new KeyValueList();
@@ -82,6 +102,8 @@ class Place {
 	private Scope scope;
 	@XmlElement(name = "helperCode")
 	private HelperCode helperCode;
+	@XmlElement(name = "helperClassCode")
+	private HelperClassCode helperClassCode;
 
 	// public String getId() {
 	// return id;
@@ -110,6 +132,10 @@ class Place {
 	public void setHelperCode(HelperCode helperCode) {
 		this.helperCode = helperCode;
 	}
+	
+	public void setHelperClassCode(HelperClassCode helperClassCode) {
+		this.helperClassCode = helperClassCode;
+	}
 
 	public Scope getScope() {
 		return scope;
@@ -121,6 +147,10 @@ class Place {
 
 	public HelperCode getHelperCode() {
 		return helperCode;
+	}
+	
+	public HelperClassCode getHelperClassCode() {
+		return helperClassCode;
 	}
 
 }
@@ -293,6 +323,22 @@ class HelperCode {
 
 }
 
+@XmlRootElement(name = "helperClassCode")
+@XmlAccessorType(XmlAccessType.FIELD)
+class HelperClassCode {
+	@XmlElement(name = "value")
+	private String value;
+
+	public String getValue() {
+		return value;
+	}
+
+	public void setValue(String value) {
+		this.value = value;
+	}
+
+}
+
 // @XmlRootElement(name = "orientation")
 // @XmlAccessorType(XmlAccessType.FIELD)
 // class Orientation {
@@ -320,6 +366,23 @@ class Code {
 
 	public void setValue(String value) {
 		this.value = value;
+	}
+
+}
+
+@XmlRootElement(name = "Messages")
+@XmlAccessorType(XmlAccessType.FIELD)
+class Message {
+
+	@XmlElement(name = "Msg")
+	private List<Msg> msgs;
+
+	public List<Msg> getMsgs() {
+		return msgs;
+	}
+
+	public void setMsgs(List<Msg> msgs) {
+		this.msgs = msgs;
 	}
 
 }

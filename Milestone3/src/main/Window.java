@@ -35,7 +35,7 @@ public class Window {
         // scope of this component
     private static final String SCOPE = "SIS.Scope1";
 	// name of this component
-    private static final String NAME = "AdminGUI";
+    private static final String NAME = "GUI";
     
     public static int port = 53217;
     // messages types that can be handled by this component
@@ -65,6 +65,7 @@ public class Window {
     private JButton adminBut;
     public JTextField field;
     private String password;
+    
     public Window() {
         begun = false;
         connected = false;
@@ -127,6 +128,99 @@ public class Window {
         
         
     }
+    
+    /*
+     * Main program
+     */
+    public static void main(String[] args)
+    {
+        while (true)
+        {
+            try
+            {
+                // try to establish a connection to SISServer
+                universal = connect();
+
+                // bind the message reader to inputstream of the socket
+                decoder = new MsgDecoder(universal.getInputStream());
+                // bind the message writer to outputstream of the socket
+                encoder = new MsgEncoder(universal.getOutputStream());
+
+                /*
+                 * construct a Connect message to establish the connection
+                 */
+				while(!registerComponent());
+                KeyValueList conn = new KeyValueList();
+                conn.putPair("Scope", SCOPE);
+                conn.putPair("MessageType", "Connect");
+				conn.putPair("Role", "Basic");
+                conn.putPair("Name", NAME);
+                encoder.sendMsg(conn);
+				
+
+                // KeyValueList for inward messages, see KeyValueList for
+                // details
+                KeyValueList kvList;
+
+                while (true)
+                {
+                    // attempt to read and decode a message, see MsgDecoder for
+                    // details
+                    kvList = decoder.getMsg();
+
+                    // process that message
+                    ProcessMsg(kvList);
+                }
+
+            }
+            catch (Exception e)
+            {
+                // if anything goes wrong, try to re-establish the connection
+                e.printStackTrace();
+                try
+                {
+                    // wait for 1 second to retry
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException e2)
+                {
+                }
+                System.out.println("Try to reconnect");
+                try
+                {
+                    universal = connect();
+                }
+                catch (IOException e1)
+                {
+                }
+            }
+        }
+    }
+    
+    static boolean registerComponent(){
+		System.out.println("attempting to register");
+		try{
+        	KeyValueList reg = new KeyValueList();
+        	reg.putPair("MessageType","Register");
+        	reg.putPair("MsgId","21");
+        	reg.putPair("Scope",SCOPE);
+        	reg.putPair("Role","Basic");
+        	reg.putPair("Description","Create GUI Component");
+        	reg.putPair("SecurityLevel","3");
+        	reg.putPair("Component Description","GUI allows admin to create voting table and activate and deactivate voting");
+			reg.putPair("KnowledgeBase","TallyTable,CreateVoting");
+			reg.putPair("InputMsgID 1", "26");
+			reg.putPair("OutputMsgID 1", "703");
+			reg.putPair("OutputMsgID 2", "24");
+			reg.putPair("OutputMsgID 3", "25");
+			reg.putPair("OutputMsgID 4", "22");
+			reg.putPair("OutputMsgID 5", "702");
+			encoder.sendMsg(reg);
+			return true;
+		} catch(Exception e){
+			return false;
+		}
+    }   
     static Socket connect() throws IOException
     {
         Socket socket = new Socket("127.0.0.1", port);
@@ -153,7 +247,7 @@ public class Window {
                 KeyValueList conn = new KeyValueList();
                 conn.putPair("Scope", SCOPE);
                 conn.putPair("MessageType", "Connect");
-		conn.putPair("Role", "Basic");
+				conn.putPair("Role", "Basic");
                 conn.putPair("Name", NAME);
                 encoder.sendMsg(conn);
                 connected = true;
@@ -185,12 +279,114 @@ public class Window {
             }
         }
     }
-    private static void genMessage(KeyValueList message){
+    private static void ProcessMsg(KeyValueList kvList) throws Exception
+    {
+		KeyValueList message = new KeyValueList();
+		
+        String scope = kvList.getValue("Scope");
+        if (!SCOPE.startsWith(scope))
+        {
+            return;
+        }
 
-                message.putPair("Sender",NAME);
-                message.putPair("Scope",SCOPE);
-                message.putPair("Receiver","VotingSoftware");
-                
+        String messageType = kvList.getValue("MessageType");
+        if (!TYPES.contains(messageType))
+        {
+            return;
+        }
+
+        String sender = kvList.getValue("Sender");
+
+        String receiver = kvList.getValue("Receiver");
+
+        String purpose = kvList.getValue("Purpose");
+        
+        String ackMsgId = kvList.getValue("AckMsgId");
+        
+        String msgId = kvList.getValue("MsgId");
+        
+        String yesNo;
+        
+        String passwordAccept;
+
+        switch (messageType)
+        {
+        case "Confirm":
+			switch(ackMsgId){
+				//Tried to create tally table
+				case "703":
+					yesNo = kvList.getValue("YesNo");
+					passwordAccept = kvList.getValue("Password");
+					if (yesNo.equals("Yes"))
+						JOptionPane.showInputDialog("Tally Table created");
+					else if (passwordAccept.equals("Yes")){
+						JOptionPane.showInputDialog("Password incorrect");
+					}
+					else{
+						JOptionPane.showInputDialog("Tally Table already exists");
+					}
+					break;
+				//Tried to activate voting
+				case "24":
+					yesNo = kvList.getValue("YesNo");
+					if (yesNo.equals("Yes")){
+						JOptionPane.showInputDialog("Voting software activated");
+					}
+					else{
+						JOptionPane.showInputDialog("Password incorrect");
+					}
+					break;
+				//Tried to deactivate voting
+				case "25":
+					yesNo = kvList.getValue("YesNo");
+					if (yesNo.equals("Yes")){
+						JOptionPane.showInputDialog("Voting software deactivated");
+					}
+					else{
+						JOptionPane.showInputDialog("Password incorrect");
+					}
+					break;
+			}
+            break;
+       //Tried to kill voting
+        case "Alert":
+        	yesNo = kvList.getValue("YesNo");
+			if (yesNo.equals("Yes")){
+				JOptionPane.showInputDialog("Voting software killed");
+			}
+			else{
+				JOptionPane.showInputDialog("Password incorrect");
+			}
+			break;
+        case "Setting":
+			break;
+        case "Connect":
+        	break;
+        case "Emergency":
+        	break;
+        //Voting results
+        case "Reading":
+        	String results = kvList.getValue("RankedReport");
+        	yesNo = kvList.getValue("YesNo");
+			if (yesNo.equals("Yes")){
+				JOptionPane.showInputDialog(results);
+			}
+			else{
+				JOptionPane.showInputDialog("Password incorrect");
+			}
+        	break;
+        
+       
+        default:
+			JOptionPane.showInputDialog("There was an error reading the message.");
+			break;
+        }
+    }
+    
+     private static void genMessage(KeyValueList message){
+		message.putPair("Sender",NAME);
+        message.putPair("Scope",SCOPE);
+        message.putPair("Receiver", "VotingSoftware");            
     }
     class activeListen implements ActionListener{
         //send the activate and init messages

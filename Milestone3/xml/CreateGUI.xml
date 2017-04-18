@@ -30,35 +30,7 @@
 		</Item>
 		<Item>
 			<Key>Name</Key>
-			<Value>AdminGUI</Value>
-		</Item>
-		<Item>
-			<Key>SourceCode</Key>
-			<Value>VS.jar</Value>
-		</Item>
-		<Item>
-			<Key>InputMsgID 1</Key>
-			<Value>701</Value>
-		</Item>
-		<Item>
-			<Key>InputMsgID 2</Key>
-			<Value>702</Value>
-		</Item>
-		<Item>
-			<Key>InputMsgID 3</Key>
-			<Value>703</Value>
-		</Item>
-		<Item>
-			<Key>OutputMsgID 1</Key>
-			<Value>711</Value>
-		</Item>
-		<Item>
-			<Key>OutputMsgID 2</Key>
-			<Value>712</Value>
-		</Item>
-		<Item>
-			<Key>OutputMsgID 2</Key>
-			<Value>26</Value>
+			<Value>GUI</Value>
 		</Item>
 		<Item>
 			<Key>Component Description</Key>
@@ -68,6 +40,6 @@
 		</Item>
 		<Item>
 			<Key>KnowledgeBase</Key>
-			<Value>TallyTable,VoterTable</Value>
+			<Value>TallyTable,VoterTable,VotingSoftware</Value>
 		</Item>
 </Msg>

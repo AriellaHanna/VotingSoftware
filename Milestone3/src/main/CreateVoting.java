@@ -139,7 +139,7 @@ public class CreateVoting
 			return true;
 		} catch(Exception e){
 			return false;
-	}
+		}
     }   
 
     /*
@@ -150,11 +150,11 @@ public class CreateVoting
         Socket socket = new Socket("127.0.0.1", port);
         return socket;
     }
-    private static void genMessage(KeyValueList message){
+    private static void genMessage(KeyValueList message, String receiver){
 
                 message.putPair("Sender",NAME);
                 message.putPair("Scope",SCOPE);
-                message.putPair("Receiver","CreateUploader");
+                message.putPair("Receiver",receiver);
                 
     }
     private static void ProcessMsg(KeyValueList kvList) throws Exception
@@ -192,21 +192,22 @@ public class CreateVoting
         case "Alert":
         	break;
         case "Setting":
-			genMessage(message);
+			genMessage(message, "GUI");
         	switch(msgId){
         		case ("703"):
         			pcode = kvList.getValue("Passcode");
         			message.putPair("MessageType","Confirm");
         			message.putPair("MsgId","26");
-        			message.putPair("Scope","SIS.Scope1");
-        			message.putPair("Sender","VotingSoftware");
-        			message.putPair("Receiver","CreateUploader");
+        			//message.putPair("Scope","SIS.Scope1");
+        			//message.putPair("Sender","VotingSoftware");
+        			//message.putPair("Receiver","GUI");
     				message.putPair("Description","Acknowledgement (Component acknowledges request to initialize tally table)");
     				message.putPair("AckMsgId","703");
     				String candidateList = kvList.getValue("CandidateList");
         			String[] candidates = candidateList.split(",");
         			if (pcode.equals(password) && !ttInit &&!closed){
     					message.putPair("YesNo","Yes");
+    					message.putPair("Password", "Yes");
     					tt = new TallyTable(candidates.length);
     					for (int i = 0; i < candidates.length; i++){
     						tt.addId(candidates[i]);
@@ -217,9 +218,11 @@ public class CreateVoting
         			else{
         				message.putPair("YesNo","No");
         				if (!pcode.equals(password)){
+        					message.putPair("Password", "No");
         					System.out.println("Tally Table not created because of wrong password"); 			
         				}
         				else{
+        					message.putPair("Password", "Yes");
         					System.out.println("Tally Table not created because it was already created.\nPlease deactivate the component before initializing a new tally table.");
         				}
         			}
@@ -228,9 +231,10 @@ public class CreateVoting
         		case("24"):
         			pcode = kvList.getValue("Passcode");
         			message.putPair("MessageType","Confirm");
-        			message.putPair("Scope","SIS.Scope1");
-        			message.putPair("Sender","VotingSoftware");
-        			message.putPair("Receiver","CreateUploader");
+        			message.putPair("MsgId", "26");
+        			//message.putPair("Scope","SIS.Scope1");
+        			//message.putPair("Sender","VotingSoftware");
+        			//message.putPair("Receiver","GUI");
     				message.putPair("Description","Acknowledgement (Component acknowledges activation request)");
     				message.putPair("AckMsgId","23");
         			if (pcode.equals(password)){
@@ -248,9 +252,10 @@ public class CreateVoting
         		case "25":
         			pcode = kvList.getValue("Passcode");
         			message.putPair("MessageType","Confirm");
-        			message.putPair("Scope","SIS.Scope1");
-        			message.putPair("Sender","VotingSoftware");
-        			message.putPair("Receiver","CreateUploader");
+        			message.putPair("msgId", "26");
+        			//message.putPair("Scope","SIS.Scope1");
+        			//message.putPair("Sender","VotingSoftware");
+        			//message.putPair("Receiver","GUI");
     				message.putPair("Description","Acknowledgement (Component acknowledges deactivation request)");
     				message.putPair("AckMsgId","25");
         			if (pcode.equals(password)){
@@ -270,12 +275,13 @@ public class CreateVoting
         	break;
         //Kill component
         case "Emergency":
-			genMessage(message);
+			genMessage(message, "GUI");
         	if (msgId.equals("22")){
         		pcode = kvList.getValue("Passcode");
         		message.putPair("MessageType","Alert");
-        		message.putPair("Scope","SIS.Scope1");
-        		message.putPair("Sender","VotingSoftware");
+        		message.putPair("MsgId", "26");
+        		//message.putPair("Scope","SIS.Scope1");
+        		//message.putPair("Sender","VotingSoftware");
     			message.putPair("Description","Acknowledgement (Component acknowledges kill)");
     			message.putPair("AckMsgId","22");
         		if (pcode.equals(password)){
@@ -293,13 +299,13 @@ public class CreateVoting
         	}
         	break;
         case "Reading":
-			genMessage(message);
+			genMessage(message, "CreateUploader");
         	switch(msgId){
         		//Cast vote
         		case "701":
         			message.putPair("MessageType","Reading");
-        			message.putPair("Scope","SIS.Scope1");
-        			message.putPair("Sender","VotingSoftware");
+        			//message.putPair("Scope","SIS.Scope1");
+        			//message.putPair("Sender","VotingSoftware");
     				message.putPair("Description","Acknowledgement Vote");
         			if (!closed && ttInit){
         				String phone = kvList.getValue("VoterPhoneNo");
@@ -333,8 +339,8 @@ public class CreateVoting
         			int n = Integer.parseInt(kvList.getValue("N"));
         			String report = new String("Please enter correct password");
         			message.putPair("MessageType","Reading");
-        			message.putPair("Scope","SIS.Scope1");
-        			message.putPair("Sender","VotingSoftware");
+        			//message.putPair("Scope","SIS.Scope1");
+        			//message.putPair("Sender","VotingSoftware");
     				message.putPair("Description","Acknowledge Request Report");
         			if (pcode.equals(password)){
         				message.putPair("YesNo","Yes");
@@ -352,15 +358,13 @@ public class CreateVoting
         //Request report
        
         default:
-			genMessage(message);
+			genMessage(message, sender);
             message.putPair("MessageType","ERROR");
             message.putPair("Description","Unable to process message");
             System.out.println("There was an error with your message");
             break;
         }
         encoder.sendMsg(message);
-
-
     }
     
     //Testing method
