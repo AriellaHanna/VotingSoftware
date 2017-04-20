@@ -214,7 +214,7 @@ public class CreateUploader
                 + why + "\nPlease note that only one vote can be counted per email account.";
         Session session = Session.getDefaultInstance(props,
                           new javax.mail.Authenticator()
-        {
+        { 
             protected PasswordAuthentication getPasswordAuthentication()
             {
                 return new PasswordAuthentication(
