@@ -95,6 +95,8 @@ public class TallyTable{
 		}
 		//result += winnerStrings[n-1];
 		result = toString();
+		if (result.equals(""))
+			return new String("No votes");
 		return result;
 	}
 	
