@@ -255,7 +255,7 @@ public class CreateVoting
         			message.putPair("msgId", "26");
         			//message.putPair("Scope","SIS.Scope1");
         			//message.putPair("Sender","VotingSoftware");
-        			//message.putPair("Receiver","GUI");
+        			message.putPair("Receiver","GUI");
     				message.putPair("Description","Acknowledgement (Component acknowledges deactivation request)");
     				message.putPair("AckMsgId","25");
         			if (pcode.equals(password)){
@@ -269,6 +269,29 @@ public class CreateVoting
         		}
         		message.putPair("Name","VotingSoftware");
         		break;
+       		 case "702":
+
+       			pcode = kvList.getValue("Passcode");
+       			int n = Integer.parseInt(kvList.getValue("N"));
+       	
+       			message.putPair("MessageType","Reading");
+       			//message.putPair("Scope","SIS.Scope1");
+       			//message.putPair("Sender","VotingSoftware");
+				
+   				message.putPair("Description","Acknowledge Request Report");
+			
+       			if (pcode.equals(password)){
+       				message.putPair("YesNo","Yes");
+       				String report = tt.getResults(n);
+					System.out.println(report);
+					message.putPair("RankedReport",report);
+       			}
+       			else{
+       				message.putPair("YesNo","No");
+       			}
+       			
+       			
+       			break;
         }
         break;
         case "Connect":
@@ -288,7 +311,11 @@ public class CreateVoting
     				message.putPair("YesNo","Yes");
     				message.putPair("Name","VotingSoftware");
     				encoder.sendMsg(message);
+					
+					Thread.sleep(1000);
+
     				System.out.println("Killing component");
+					
     				System.exit(0);
         		}
         		else{
@@ -334,24 +361,30 @@ public class CreateVoting
     					System.out.println("Voting is closed");
         			}
         			break;
+					/*
         		 case "702":
+				 	System.out.println("debug 1: report");
         			pcode = kvList.getValue("Passcode");
         			int n = Integer.parseInt(kvList.getValue("N"));
-        			String report = new String("Please enter correct password");
+        	
         			message.putPair("MessageType","Reading");
         			//message.putPair("Scope","SIS.Scope1");
         			//message.putPair("Sender","VotingSoftware");
+					System.out.println
     				message.putPair("Description","Acknowledge Request Report");
+					System.out.println("wtffff");
         			if (pcode.equals(password)){
         				message.putPair("YesNo","Yes");
-        				report = tt.getResults(n);
+        				String report = tt.getResults(n);
+						System.out.println(report);
+						message.putPair("RankedReport",report);
         			}
         			else{
         				message.putPair("YesNo","No");
         			}
-        			message.putPair("RankedReport",report);
-        			System.out.println(report);
-        			break;
+        			
+        			
+        			break;*/
         	}
         	break;
         
