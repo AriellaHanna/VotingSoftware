@@ -396,39 +396,39 @@ public class Window {
             try{
             KeyValueList actMes = new KeyValueList();
             sendConnect();
-            System.out.println("Step 1");
+            
             String candTemp = JOptionPane.showInputDialog("Enter List of "
                         + "Candidate IDs separated by commas");
             actMes.putPair("CandidateList",candTemp);
             
-           System.out.println("Step 2");
+   
            
            genMessage(actMes);
            actMes.putPair("MessageType","Setting");
            actMes.putPair("Passcode",password);
            actMes.putPair("MsgId","24");
            encoder.sendMsg(actMes);
-           System.out.println("Step 3");
+        
            KeyValueList resp = decoder.getMsg();
            System.out.println(resp.toString());
            System.out.println(resp.getValue("Scope"));
            if(resp.getValue("YesNo").equals("No")){
-               System.out.println("Step 4a");
+         
                JOptionPane.showMessageDialog(frame,"Bad Admin Password: Could not activate");
                newPassword();
                return;
                
            } else {
-               System.out.println("Step 4b");
+         
                actBut.setEnabled(false);
            }
            actMes.removePair("MsgId");
            actMes.putPair("MsgId","703");
-           System.out.println("Step 5");
+        
            encoder.sendMsg(actMes);
-           System.out.println("Step 6");
+         
            activated();
-            
+            JOptionPane.showMessageDialog(frame,"Voting Has Begun");
            
             } catch (Exception d){
                 JOptionPane.showMessageDialog(frame,"Error "
@@ -450,14 +450,18 @@ public class Window {
     }
     public void activated(){
         showBut.setEnabled(true);
+		deactBut.setEnabled(true);
         actBut.setEnabled(false);
     }
+	public void deactivated(){
+		deactBut.setEnabled(false);
+	}
     class passwordListen implements ActionListener{
         public void actionPerformed(ActionEvent e){
             password = JOptionPane.showInputDialog("Enter Admin Password");
             actBut.setEnabled(true);
             killBut.setEnabled(true);
-            deactBut.setEnabled(true);
+            deactBut.setEnabled(false);
             adminBut.setEnabled(false);
         }
     }
@@ -465,7 +469,7 @@ public class Window {
         //stop accepting new votes
         public void actionPerformed(ActionEvent e){
             try{
-            //sendConnect();
+            sendConnect();
             KeyValueList deactMes = new KeyValueList();
             genMessage(deactMes);
             deactMes.putPair("MessageType","Setting");
@@ -478,11 +482,15 @@ public class Window {
                 newPassword();
                 return;
             }
+			deactivated();
+			JOptionPane.showMessageDialog(frame,"Voting Complete");
             } catch (Exception d){
                 JOptionPane.showMessageDialog(frame,"Error "
                         + "communicating with Voting Software","Communication Error",
                         JOptionPane.ERROR_MESSAGE);
+				d.printStackTrace();
             }
+			
         }
     }
     class showListen implements ActionListener{
@@ -497,6 +505,7 @@ public class Window {
             showMes.putPair("Passcode",password);
             showMes.putPair("N","1");
             encoder.sendMsg(showMes);
+			
             KeyValueList resp = decoder.getMsg();
             if(resp.getValue("YesNo").equals("No")){
                 JOptionPane.showMessageDialog(frame, resp.getValue("Category") + ": Could not display rankings");
@@ -505,12 +514,24 @@ public class Window {
                 }
                 return;
             } else {
-                JOptionPane.showMessageDialog(frame, resp.getValue("RankedReport"));
+				
+				String result = resp.getValue("RankedReport");
+				String display_string = "";
+				String[] parts = result.split(";");
+				for(int i = 0; i < parts.length; i++){
+					display_string = display_string.concat(parts[i]);
+					if(i < parts.length - 1){
+						display_string = display_string.concat(" | ");
+					}
+				}
+				display_string = display_string.replace(",",": ");
+                JOptionPane.showMessageDialog(frame, display_string);
             }
             } catch (Exception d){
                 JOptionPane.showMessageDialog(frame,"Error "
-                        + "communicating with Voting Software","Communication Error",
+                        + "communicating with Voting Software. Please retry.","Communication Error",
                         JOptionPane.ERROR_MESSAGE);
+				 d.printStackTrace();
             }
         }
     }
@@ -527,9 +548,9 @@ public class Window {
             KeyValueList resp = decoder.getMsg();
             if(resp.getValue("YesNo").equals("No")){
                 JOptionPane.showMessageDialog(frame,"Bad Admin Password: Couldn't Kill");
-                
+                newPassword();
             } else {
-                JOptionPane.showMessageDialog(frame,"Ending program");
+                JOptionPane.showMessageDialog(frame,"Ending HayesHannaVoting Software");
                 
                 System.exit(0);
             }
@@ -538,6 +559,7 @@ public class Window {
                 JOptionPane.showMessageDialog(frame,"Error "
                         + "communicating with Voting Software","Communication Error",
                         JOptionPane.ERROR_MESSAGE);
+				d.printStackTrace();
             }
         }
     }
