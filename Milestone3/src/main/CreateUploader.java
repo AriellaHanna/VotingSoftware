@@ -119,6 +119,7 @@ public class CreateUploader
 	    conn.putPair("Role", "Basic");
             conn.putPair("Name", NAME);
             encoder.sendMsg(conn);
+			decoder.getMsg();
             
             while(true){
             try
